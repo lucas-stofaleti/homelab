@@ -5,6 +5,7 @@ My personal homelab documentation and configurations.
 ## Documentation
 
 - **[Network](docs/NETWORK.md)** - Network topology, IPAM, VLANs and device configurations
+- **[Firewall](docs/FIREWALL.md)** - OPNsense configuration runbook — aliases, NAT, and per-VLAN rules
 - **[Diagrams](docs/diagrams/)** - Drawio visualizations
 
 ## Contributions

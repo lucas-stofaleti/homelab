@@ -1,6 +1,6 @@
 # Homelab Network Topology
 
-This document describes the network topology for the homelab.
+This document describes the network topology for the homelab. For the firewall rules that enforce the inter-VLAN policy described here, see [FIREWALL.md](FIREWALL.md).
 
 ![topology](diagrams/topology.drawio.png)
 
