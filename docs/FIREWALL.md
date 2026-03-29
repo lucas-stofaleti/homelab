@@ -150,6 +150,56 @@ Trusted client devices. Internet access and K8S-hosted services. No direct acces
 
 ---
 
+## Step 7 — Services > DHCPv4
+
+`Services > DHCPv4 > [Interface]`
+
+OPNsense runs DHCP for each VLAN interface. DHCP serves dynamic addresses only — hosts that need fixed IPs have static IPs configured directly on the device, outside the DHCP range. The DNS server handed to all clients is Pi-hole (`192.168.20.5`). NTP is the OPNsense gateway on each VLAN.
+
+### VLAN 10 — MGMT
+
+`Services > DHCPv4 > VLAN10_MGMT`
+
+| Setting | Value |
+|---------|-------|
+| Enable | ✓ |
+| Range | `192.168.10.50` — `192.168.10.55` |
+| DNS server | `192.168.20.5` (Pi-hole) |
+| Gateway | `192.168.10.1` |
+| NTP server | `192.168.10.1` |
+
+> Devices that need a fixed IP (e.g. admin laptop) should be configured with a static IP directly on the device, outside the DHCP range.
+
+### VLAN 20 — SERVERS
+
+`Services > DHCPv4 > VLAN20_SERVERS`
+
+| Setting | Value |
+|---------|-------|
+| Enable | ✓ |
+| Range | `192.168.20.16` — `192.168.20.31` |
+| DNS server | `192.168.20.5` (Pi-hole) |
+| Gateway | `192.168.20.1` |
+| NTP server | `192.168.20.1` |
+
+> For provisioning only. Assign static IPs directly on VMs once they are configured. Static hosts (e.g. Pi-hole at `192.168.20.5`) are configured on the device, not via DHCP. DHCP range is `192.168.20.16/28`.
+
+### VLAN 30 — LAN
+
+`Services > DHCPv4 > VLAN30_LAN`
+
+| Setting | Value |
+|---------|-------|
+| Enable | ✓ |
+| Range | `192.168.30.192` — `192.168.30.254` |
+| DNS server | `192.168.20.5` (Pi-hole) |
+| Gateway | `192.168.30.1` |
+| NTP server | `192.168.30.1` |
+
+> Devices needing a fixed IP (e.g. access point at `192.168.30.5`) are configured with a static IP on the device itself.
+
+---
+
 ## Future work
 
 Items below are not yet configured. Each section notes what must be in place before proceeding.
@@ -171,6 +221,20 @@ IoT devices. Internet and DNS only. Isolated from all internal networks.
 | 3 | Pass | TCP | `NET_IOT` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
 | 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
+### [FUTURE] Services > DHCPv4 > VLAN40_IOT
+
+`Services > DHCPv4 > VLAN40_IOT`
+
+**Prerequisites:** Same as firewall rules above.
+
+| Setting | Value |
+|---------|-------|
+| Enable | ✓ |
+| Range | `192.168.40.100` — `192.168.40.254` |
+| DNS server | `192.168.20.5` (Pi-hole) |
+| Gateway | `192.168.40.1` |
+| NTP server | `192.168.40.1` |
+
 ---
 
 ### [FUTURE] Firewall > Rules > VLAN50_GUEST
@@ -188,46 +252,16 @@ Guest devices. Internet and DNS only. Isolated from all internal networks.
 | 3 | Pass | TCP | `NET_GUEST` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
 | 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
----
+### [FUTURE] Services > DHCPv4 > VLAN50_GUEST
 
-### [FUTURE] DNS redundancy
+`Services > DHCPv4 > VLAN50_GUEST`
 
-**Problem:** Pi-hole (`192.168.20.5`) is the sole DNS server for all VLANs. If it goes down, DNS resolution fails across the entire network.
+**Prerequisites:** Same as firewall rules above.
 
-**Solution:** Deploy a second Pi-hole (`pihole-02` at `192.168.20.6`). Use [Gravity Sync](https://github.com/vmstan/gravity-sync) to replicate blocklists between them. Configure both IPs as DNS servers in OPNsense DHCP settings for each VLAN.
-
-**Firewall impact:** Add `HOST_PIHOLE_02` alias. Update VLAN20_SERVERS rule 2 to include `HOST_PIHOLE_02` as an additional DNS source alias.
-
----
-
-### [FUTURE] Remote access
-
-**Option A — Tailscale** (recommended for personal admin access): Installs as a VM or container in VLAN 20. Acts as a private mesh VPN — enrolled devices connect as if on MGMT. No ports opened on the ISP router.
-
-**Option B — Cloudflare Tunnel**: Exposes specific services via Cloudflare's CDN using an outbound-only connection. Better suited for sharing a service (e.g. a dashboard) than for full admin access.
-
-**Firewall impact for Tailscale:** Tailscale node in VLAN 20 needs outbound access on UDP `41641` (or falls back to TCP `443`). Add to VLAN20_SERVERS rules. Inbound from Tailscale peers is handled by the Tailscale daemon, not OPNsense rules.
-
----
-
-### [FUTURE] Access point VLAN support
-
-Current AP (`192.168.30.5`) does not support VLANs and must remain on VLAN 30. When the AP is replaced with a VLAN-capable model:
-
-- Move the management IP to VLAN 10 and update `HOST_AP_MGMT` alias.
-- Add a MGMT SSID (VLAN 10) for administrative wireless access.
-- Keep a LAN SSID (VLAN 30) for daily use.
-- Keep IoT/Guest SSIDs mapped to VLANs 40/50 when those are activated.
-
----
-
-### [FUTURE] OPNsense HA
-
-Single OPNsense instance is a network single point of failure. When a second unit is available, configure High Availability using CARP virtual IPs under `System > High Availability`. All gateway IPs documented in this file would become CARP VIPs shared between the two nodes.
-
----
-
-### [FUTURE] Backup strategy
-
-- **OPNsense config:** Export after every change at `System > Configuration > Backups`. Store off-box.
-- **Pi-hole settings:** Use Teleporter (`Settings > Teleporter`) to export. Also covered by Gravity Sync if a second Pi-hole is deployed.
+| Setting | Value |
+|---------|-------|
+| Enable | ✓ |
+| Range | `192.168.50.100` — `192.168.50.254` |
+| DNS server | `192.168.20.5` (Pi-hole) |
+| Gateway | `192.168.50.1` |
+| NTP server | `192.168.50.1` |

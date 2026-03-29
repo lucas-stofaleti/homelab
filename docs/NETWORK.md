@@ -48,6 +48,7 @@ The homelab network is designed with multiple VLANs for segmentation and securit
 |       |                   | 192.168.20.1         | OPNsense GW        |
 |       |                   | 192.168.20.5-10      | DNS Servers        |
 |       |                   | - 192.168.20.5       | pihole-01          |
+|       |                   | 192.168.20.16-31     | DHCP (provisioning)|
 |       |                   | 192.168.20.192/26    | K8S Clusters       |
 |       |                   | - 192.168.20.192/29  | API Server VIPs    |
 |       |                   | - 192.168.20.208/28  | Ingress/Egress VIPs|
@@ -57,7 +58,9 @@ The homelab network is designed with multiple VLANs for segmentation and securit
 |       |                   | 192.168.30.5         | Access Point MGMT  |
 |       |                   | 192.168.30.192/26    | DHCP               |
 | 40    | - 192.168.40.0/24 |                      | VLAN 40 (FUTURE)   |
+|       |                   | 192.168.40.100-254   | DHCP (IoT)         |
 | 50    | - 192.168.50.0/24 |                      | VLAN 50 (FUTURE)   |
+|       |                   | 192.168.50.100-254   | DHCP (Guest)       |
 
 ## VLAN Configuration
 
