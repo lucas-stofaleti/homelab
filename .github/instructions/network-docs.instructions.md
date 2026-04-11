@@ -21,7 +21,7 @@ These two files are tightly coupled. Any change to one almost always requires a 
 
 - **VLAN 10 MGMT** — out-of-band recovery network. DNS (Pi-hole) + NTP + web outbound only. Proxmox and OPNsense are reachable intra-VLAN via the switch without firewall rules. Day-to-day infra management is done from VLAN 30 LAN.
 - **VLAN 20 Servers** — DNS (Pi-hole intra-VLAN) + NTP + web outbound + Pi-hole upstream DNS (port 53 outbound). No access to other VLANs.
-- **VLAN 30 LAN** — trusted primary workstation network. Full unrestricted access to all VLANs and internet (any port/proto). Single pass-all rule.
+- **VLAN 30 LAN** — trusted primary workstation network. One explicit rule per internal VLAN destination (MGMT, Servers), then full internet (any port/proto). Single pass per zone + internet + Reject.
 - **VLAN 40 IoT / VLAN 50 Guest** — DNS (Pi-hole) + NTP + full internet (`!RFC1918_INTERNAL`, any port/proto). No access to internal VLANs.
 
 - **Reject** (sends TCP RST) on all VLAN interfaces — never silent Block on internal interfaces.

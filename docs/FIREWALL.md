@@ -137,12 +137,14 @@ Server infrastructure. Outbound internet for updates and container pulls. Pi-hol
 
 `Firewall > Rules > VLAN30_LAN`
 
-Primary network for trusted personal devices (workstations, laptops, phones). Full unrestricted access to all internal VLANs and the internet — no port restrictions. Use this VLAN for day-to-day work including remote access, video calls, VPN, and management of homelab services.
+Primary network for trusted personal devices (workstations, laptops, phones). One rule per destination — each documents why LAN can reach that zone.
 
 | # | Action | Proto | Source | Src Port | Destination | Dst Port | Log | Description |
 |---|--------|-------|--------|----------|-------------|----------|-----|-------------|
-| 1 | Pass | any | `NET_LAN` | any | any | any | ✓ | Full access — all VLANs and internet |
-| 2 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
+| 1 | Pass | any | `NET_LAN` | any | `NET_MGMT` | any | ✓ | Infrastructure management — Proxmox, OPNsense |
+| 2 | Pass | any | `NET_LAN` | any | `NET_SERVERS` | any | ✓ | Self-hosted services and VMs |
+| 3 | Pass | any | `NET_LAN` | any | `!RFC1918_INTERNAL` | any | ✓ | Full internet — WFH, any protocol |
+| 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
 ---
 
