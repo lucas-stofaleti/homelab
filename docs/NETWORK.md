@@ -65,7 +65,7 @@ The homelab network is designed with multiple VLANs for segmentation and securit
 ## VLAN Configuration
 
 ### VLAN 10 - Management
-- **Purpose**: Management network for infrastructure devices
+- **Purpose**: Out-of-band recovery network for infrastructure devices. Use when direct physical access to Proxmox or OPNsense is needed (e.g. after a misconfiguration). Day-to-day management is done from VLAN 30.
 - **IP Range**: 192.168.10.0/24
 - **Gateway**: 192.168.10.1 (OPNsense)
 - **Key Devices**:
@@ -81,7 +81,7 @@ The homelab network is designed with multiple VLANs for segmentation and securit
   - Containerized services
 
 ### VLAN 30 - LAN
-- **Purpose**: Main local area network for trusted devices
+- **Purpose**: Primary network for trusted personal devices (workstations, laptops, phones). Full access to all VLANs and unrestricted internet. Used for day-to-day work including WFH, homelab management, and access to self-hosted services.
 - **IP Range**: 192.168.30.0/24
 - **Gateway**: 192.168.30.1 (OPNsense)
 - **Key Devices**:

@@ -8,11 +8,11 @@ Sections marked **[FUTURE]** should not be configured until the corresponding in
 
 | VLAN | Internal access | Internet access |
 |------|----------------|----------------|
-| 10 MGMT | All VLANs, all ports | Web only (80/443) |
+| 10 MGMT | None (intra-VLAN via switch only) | Web only (80/443) |
 | 20 SERVERS | None | Web only (80/443) |
-| 30 LAN | K8S ingress only | Web only (80/443) |
-| 40 IOT | Pi-hole DNS only | Web only (80/443) |
-| 50 GUEST | Pi-hole DNS only | Web only (80/443) |
+| 30 LAN | All VLANs, all ports | Full (any port/proto) |
+| 40 IOT | Pi-hole DNS only | Full (any port/proto) |
+| 50 GUEST | Pi-hole DNS only | Full (any port/proto) |
 
 ## Configuration conventions
 
@@ -105,13 +105,14 @@ OPNsense translates all outbound traffic to `192.168.128.2` (its WAN IP). This i
 
 `Firewall > Rules > VLAN10_MGMT`
 
-Administrative network. Connect a laptop here via cable when performing infrastructure work. Full access to all internal networks. Internet limited to web.
+Out-of-band access network for infrastructure recovery. Use this VLAN when you need direct physical access to Proxmox or OPNsense (e.g. after a misconfiguration, or when LAN is unavailable). Proxmox and OPNsense are reachable directly via the switch without any firewall rule. Day-to-day infrastructure management is done from VLAN 30 LAN. Outbound is limited to DNS and web.
 
 | # | Action | Proto | Source | Src Port | Destination | Dst Port | Log | Description |
 |---|--------|-------|--------|----------|-------------|----------|-----|-------------|
-| 1 | Pass | any | `NET_MGMT` | any | `RFC1918_INTERNAL` | any | ✓ | Full access to all internal networks |
-| 2 | Pass | TCP | `NET_MGMT` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
-| 3 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
+| 1 | Pass | TCP/UDP | `NET_MGMT` | any | `HOST_PIHOLE_01` | `PORTS_DNS` | ✓ | DNS via Pi-hole |
+| 2 | Pass | UDP | `NET_MGMT` | any | `HOST_OPNSENSE_MGMT` | `PORTS_NTP` | ✓ | Time sync via OPNsense |
+| 3 | Pass | TCP | `NET_MGMT` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
+| 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
 > **Note:** Enable the NTP service under `Services > Network Time` so MGMT devices have a time source on the internal network.
 
@@ -136,17 +137,12 @@ Server infrastructure. Outbound internet for updates and container pulls. Pi-hol
 
 `Firewall > Rules > VLAN30_LAN`
 
-Trusted client devices. Internet access and K8S-hosted services. No direct access to MGMT or SERVERS.
+Primary network for trusted personal devices (workstations, laptops, phones). Full unrestricted access to all internal VLANs and the internet — no port restrictions. Use this VLAN for day-to-day work including remote access, video calls, VPN, and management of homelab services.
 
 | # | Action | Proto | Source | Src Port | Destination | Dst Port | Log | Description |
 |---|--------|-------|--------|----------|-------------|----------|-----|-------------|
-| 1 | Pass | TCP/UDP | `NET_LAN` | any | `HOST_PIHOLE_01` | `PORTS_DNS` | ✓ | DNS via Pi-hole |
-| 2 | Pass | UDP | `NET_LAN` | any | `HOST_OPNSENSE_LAN` | `PORTS_NTP` | ✓ | Time sync via OPNsense |
-| 3 | Pass | TCP | `NET_LAN` | any | `NET_K8S_INGRESS_VIPS` | `PORTS_WEB` | ✓ | Access self-hosted services via K8S ingress |
-| 4 | Pass | TCP | `NET_LAN` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
-| 5 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
-
-> **Note:** Rule 3 (K8S ingress) must stay above rule 4 (internet). Rule 4 would not match internal destinations anyway due to `!RFC1918_INTERNAL`, but the order makes the intent explicit.
+| 1 | Pass | any | `NET_LAN` | any | any | any | ✓ | Full access — all VLANs and internet |
+| 2 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
 ---
 
@@ -218,7 +214,7 @@ IoT devices. Internet and DNS only. Isolated from all internal networks.
 |---|--------|-------|--------|----------|-------------|----------|-----|-------------|
 | 1 | Pass | TCP/UDP | `NET_IOT` | any | `HOST_PIHOLE_01` | `PORTS_DNS` | ✓ | DNS via Pi-hole |
 | 2 | Pass | UDP | `NET_IOT` | any | `HOST_OPNSENSE_IOT` | `PORTS_NTP` | ✓ | Time sync via OPNsense |
-| 3 | Pass | TCP | `NET_IOT` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
+| 3 | Pass | any | `NET_IOT` | any | `!RFC1918_INTERNAL` | any | ✓ | Full internet access |
 | 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
 ### [FUTURE] Services > DHCPv4 > VLAN40_IOT
@@ -249,7 +245,7 @@ Guest devices. Internet and DNS only. Isolated from all internal networks.
 |---|--------|-------|--------|----------|-------------|----------|-----|-------------|
 | 1 | Pass | TCP/UDP | `NET_GUEST` | any | `HOST_PIHOLE_01` | `PORTS_DNS` | ✓ | DNS via Pi-hole |
 | 2 | Pass | UDP | `NET_GUEST` | any | `HOST_OPNSENSE_GUEST` | `PORTS_NTP` | ✓ | Time sync via OPNsense |
-| 3 | Pass | TCP | `NET_GUEST` | any | `!RFC1918_INTERNAL` | `PORTS_WEB` | ✓ | Outbound internet — web only |
+| 3 | Pass | any | `NET_GUEST` | any | `!RFC1918_INTERNAL` | any | ✓ | Full internet access |
 | 4 | Reject | any | any | any | any | any | ✓ | Default deny — fast reject |
 
 ### [FUTURE] Services > DHCPv4 > VLAN50_GUEST
